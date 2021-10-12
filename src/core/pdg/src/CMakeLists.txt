@@ -44,6 +44,7 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../callgraph/include
   ${CMAKE_INSTALL_PREFIX}/include
   ${CMAKE_INSTALL_PREFIX}/include/svf
+  ${CMAKE_INSTALL_PREFIX}/include/nlohmann
   )
 
 # Declare the LLVM pass to compile

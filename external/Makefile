@@ -2,10 +2,11 @@ DEBUG?=0
 JOBS?=8
 SVF_BRANCH?=SVF-1.8
 SCAF_BRANCH?=v9.1.3
+JSON_BRANCH?=v3.10.3
 
 all: compile
 
-compile: svf patch.tar scaf
+compile: svf patch.tar scaf json
 	cd svf ; tar xf ../patch.tar ;
 	./scripts/patch.sh
 	./scripts/scaf_patch_make.sh 
@@ -18,6 +19,7 @@ else
 	cd svf ; ./build.sh;
 	cd scaf ; make scaf-release;
 endif
+	cp -r json/include/nlohmann ../install/include/
 
 compile_without_scaf: svf patch.tar
 	cd svf ; tar xf ../patch.tar ;
@@ -33,6 +35,9 @@ patch.tar: patch svf
 scaf:
 	git clone -b $(SCAF_BRANCH) https://github.com/PrincetonUniversity/SCAF scaf
 
+json:
+	git clone -b $(JSON_BRANCH) https://github.com/nlohmann/json.git json
+
 clean:
 	./scripts/clean.sh
 	rm -f patch.tar 
@@ -40,5 +45,6 @@ clean:
 uninstall:
 	rm -rf svf ;
 	rm -rf scaf ;
+	rm -rf json ;
 
 .PHONY: compile compile_without_scaf clean uninstall

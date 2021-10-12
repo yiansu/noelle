@@ -27,7 +27,8 @@ include(AddLLVM)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include
                     ${CMAKE_CURRENT_BINARY_DIR}/include
                     ${CMAKE_INSTALL_PREFIX}/include
-                    ${CMAKE_INSTALL_PREFIX}/include/svf)
+                    ${CMAKE_INSTALL_PREFIX}/include/svf
+                    ${CMAKE_INSTALL_PREFIX}/include/nlohmann)                    
 
 # Pass
 add_subdirectory(alloc_aa)
