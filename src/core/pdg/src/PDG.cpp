@@ -490,20 +490,20 @@ void PDG::dumpPDGAsJson (void) {
         edge_j["isWAWDependence"] = edge->isWAWDependence();
         edge_j["isRemovableDependence"] = edge->isRemovableDependence();
 
-        json remedies_j = json::array();
-        if (auto optional_remedies = edge->getRemedies()) {
-          for (auto remedies : *optional_remedies) {
-            json remedyset_j = json::array();
+        json remeds_j = json::array();
+        if (auto optional_remeds = edge->getRemedies()) {
+          for (auto remedies : *optional_remeds) {
+            json remedies_j = json::array();
             for (auto remedy : *remedies) {
               json remedy_j = json::object();
               remedy_j["name"] = remedy->getRemedyName();
               remedy_j["cost"] = remedy->cost;
-              remedyset_j.push_back(remedy_j);
+              remedies_j.push_back(remedy_j);
             }
-            remedies_j.push_back(remedyset_j);
+            remeds_j.push_back(remedies_j);
           }
         }
-        edge_j["remedies"] = remedies_j;
+        edge_j["remeds"] = remeds_j;
 
         pdg_j.push_back(edge_j);
       }
