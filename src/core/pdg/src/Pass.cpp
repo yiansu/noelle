@@ -20,6 +20,7 @@ namespace llvm::noelle{
 static cl::opt<int> PDGVerbose("noelle-pdg-verbose", cl::ZeroOrMore, cl::Hidden, cl::desc("Verbose output (0: disabled, 1: minimal, 2: maximal, 3:maximal plus dumping PDG"));
 static cl::opt<bool> PDGEmbed("noelle-pdg-embed", cl::ZeroOrMore, cl::Hidden, cl::desc("Embed the PDG"));
 static cl::opt<bool> PDGDump("noelle-pdg-dump", cl::ZeroOrMore, cl::Hidden, cl::desc("Dump the PDG"));
+static cl::opt<bool> PDGJsonDump("noelle-pdg-json-dump", cl::ZeroOrMore, cl::Hidden, cl::desc("Dump the PDG as Json"));
 static cl::opt<bool> PDGCheck("noelle-pdg-check", cl::ZeroOrMore, cl::Hidden, cl::desc("Check the PDG"));
 static cl::opt<bool> PDGSVFDisable("noelle-disable-pdg-svf", cl::ZeroOrMore, cl::Hidden, cl::desc("Disable SVF"));
 static cl::opt<bool> PDGAllocAADisable("noelle-disable-pdg-allocaa", cl::ZeroOrMore, cl::Hidden, cl::desc("Disable our custom alias analysis"));
@@ -29,6 +30,7 @@ bool PDGAnalysis::doInitialization (Module &M){
   this->verbose = static_cast<PDGVerbosity>(PDGVerbose.getValue());
   this->embedPDG = (PDGEmbed.getNumOccurrences() > 0) ? true : false;
   this->dumpPDG = (PDGDump.getNumOccurrences() > 0) ? true : false;
+  this->dumpPDGJson = (PDGJsonDump.getNumOccurrences() > 0) ? true : false;
   this->performThePDGComparison = (PDGCheck.getNumOccurrences() > 0) ? true : false;
   this->disableSVF = (PDGSVFDisable.getNumOccurrences() > 0) ? true : false;
   this->disableAllocAA = (PDGAllocAADisable.getNumOccurrences() > 0) ? true : false;
@@ -98,6 +100,13 @@ bool PDGAnalysis::runOnModule (Module &M){
       return LI;
     };
     localPDGPrinter->printPDG(M, callGraph, currentPDG, getLoopInfo);
+  }
+
+  /*
+   * Dump the PDG as JSON
+   */
+  if (this->dumpPDGJson) {
+    currentPDG->dumpPDGAsJson();
   }
 
   return false;

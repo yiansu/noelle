@@ -58,6 +58,7 @@ namespace llvm::noelle {
       PDGVerbosity verbose;
       bool embedPDG;
       bool dumpPDG;
+      bool dumpPDGJson;
       bool performThePDGComparison;
       bool disableSVF;
       bool disableAllocAA;

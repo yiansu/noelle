@@ -125,6 +125,8 @@ namespace llvm::noelle {
 
       std::vector<DGEdge<Value> *> getSortedDependences (void) ;
 
+      void dumpPDGAsJson (void) ;
+
       /*
        * Destructor
        */

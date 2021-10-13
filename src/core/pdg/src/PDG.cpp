@@ -20,9 +20,12 @@
 #include "llvm/Support/raw_ostream.h"
 
 #include "../include/PDG.hpp"
+#include <fstream>
+#include "json.hpp"
 
 using namespace llvm;
 using namespace llvm::noelle;
+using namespace nlohmann;
 
 PDG::PDG (Module &M) 
   {
@@ -449,6 +452,68 @@ std::unordered_set<DGEdge<Value> *> PDG::getDependences (Value *from, Value *to)
   auto edgeSet = this->fetchEdges(srcNode, dstNode);
 
   return edgeSet;
+}
+
+void PDG::dumpPDGAsJson (void) {
+  json pdg_j = json::array();
+
+  // go through all instructions, collect inst to id map
+  std::unordered_map<Instruction  *, int> instIdMap;
+  for (auto node : this->getNodes()) {
+    // we only care about instructions, not function args
+    if (Instruction *inst = dyn_cast<Instruction>(node->getT())) {
+      if (MDNode *m = inst->getMetadata("namer")) {
+        if (ValueAsMetadata *vsm = dyn_cast<ValueAsMetadata>(m->getOperand(1))) {
+          if (ConstantInt *cv = (ConstantInt *)vsm->getValue()) {
+            instIdMap[inst] = (int)cv->getSExtValue();
+          }
+        }
+      }
+    }
+  }
+
+  // go through all edges, use map to get instruction id
+  for (auto *edge : this->getEdges()) {
+    if (Instruction *fromInst = dyn_cast<Instruction>(edge->getIncomingT())) {
+      if (Instruction *toInst = dyn_cast<Instruction>(edge->getOutgoingT())) {
+        
+        json edge_j = json::object();
+        edge_j["from"] = instIdMap[fromInst];
+        edge_j["to"] = instIdMap[toInst];
+        edge_j["isControlDependence"] = edge->isControlDependence();
+        edge_j["isDataDependence"] = edge->isDataDependence();
+        edge_j["isMemoryDependence"] = edge->isMemoryDependence();
+        edge_j["isLoopCarriedDependence"] = edge->isLoopCarriedDependence();
+        edge_j["isMustDependence"] = edge->isMustDependence();
+        edge_j["isRAWDependence"] = edge->isRAWDependence();
+        edge_j["isWARDependence"] = edge->isWARDependence();
+        edge_j["isWAWDependence"] = edge->isWAWDependence();
+        edge_j["isRemovableDependence"] = edge->isRemovableDependence();
+
+        if (auto optional_remedies = edge->getRemedies()) {
+          json remedies_j = json::array();
+          for (auto remedies : *optional_remedies) {
+            json remedyset_j = json::array();
+            for (auto remedy : *remedies) {
+              json remedy_j = json::object();
+              remedy_j["name"] = remedy->getRemedyName();
+              remedy_j["cost"] = remedy->cost;
+              remedyset_j.push_back(remedy_j);
+            }
+            remedies_j.push_back(remedyset_j);
+          }
+          edge_j["remeds"] = remedies_j;
+        }
+
+        pdg_j.push_back(edge_j);
+      }
+    }
+  }
+
+  std::ofstream os_j("pdg.json");
+  os_j << pdg_j.dump(4) << std::endl;
+
+  return;
 }
 
 PDG::~PDG() {

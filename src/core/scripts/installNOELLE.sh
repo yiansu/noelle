@@ -33,6 +33,7 @@ patchInstallDir "noelle-meta-loop-embed" ;
 patchInstallDir "noelle-meta-pdg-embed" ;
 patchInstallDir "noelle-meta-prof-embed" ;
 patchInstallDir "noelle-pdg-stats" ;
+patchInstallDir "noelle-pdg-json-dump" ;
 patchInstallDir "noelle-loop-stats" ;
 patchInstallDir "noelle-prof-coverage" ;
 patchInstallDir "noelle-config" ;
