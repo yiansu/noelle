@@ -490,8 +490,8 @@ void PDG::dumpPDGAsJson (void) {
         edge_j["isWAWDependence"] = edge->isWAWDependence();
         edge_j["isRemovableDependence"] = edge->isRemovableDependence();
 
+        json remedies_j = json::array();
         if (auto optional_remedies = edge->getRemedies()) {
-          json remedies_j = json::array();
           for (auto remedies : *optional_remedies) {
             json remedyset_j = json::array();
             for (auto remedy : *remedies) {
@@ -502,8 +502,8 @@ void PDG::dumpPDGAsJson (void) {
             }
             remedies_j.push_back(remedyset_j);
           }
-          edge_j["remeds"] = remedies_j;
         }
+        edge_j["remedies"] = remedies_j;
 
         pdg_j.push_back(edge_j);
       }
