@@ -125,7 +125,8 @@ namespace llvm::noelle {
 
       std::vector<DGEdge<Value> *> getSortedDependences (void) ;
 
-      void dumpPDGAsJson (void) ;
+      PDG * constructPDGFromJson (Module &M);
+      void dumpPDGAsJson (bool dumpJsonForAudit = false) ;
 
       /*
        * Destructor

@@ -106,7 +106,7 @@ bool PDGAnalysis::runOnModule (Module &M){
    * Dump the PDG as JSON
    */
   if (this->dumpPDGJson) {
-    currentPDG->dumpPDGAsJson();
+    currentPDG->dumpPDGAsJson(true);
   }
 
   return false;

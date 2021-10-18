@@ -454,8 +454,55 @@ std::unordered_set<DGEdge<Value> *> PDG::getDependences (Value *from, Value *to)
   return edgeSet;
 }
 
-void PDG::dumpPDGAsJson (void) {
-  json pdg_j = json::array();
+PDG * PDG::constructPDGFromJson(Module &M) {
+  auto pdg = new PDG(M);
+
+  // collect id to inst map
+  std::unordered_map<int, Instruction *> idInstMap;
+  for (auto node : pdg->getNodes()) {
+    if (Instruction *inst = dyn_cast<Instruction>(node->getT())) {
+      if (MDNode *m = inst->getMetadata("namer")) {
+        if (ValueAsMetadata *vsm = dyn_cast<ValueAsMetadata>(m->getOperand(1))) {
+          if (ConstantInt *cv = (ConstantInt *)vsm->getValue()) {
+            idInstMap[(int)cv->getSExtValue()] = inst;
+          }
+        }
+      }
+    }
+  }
+
+  // read in pdg bson and convert to json
+  std::ifstream is_b("pdg.bson", std::ios::in | std::ios::binary);
+  std::vector<uint8_t> pdg_b((std::istreambuf_iterator<char>(is_b)), std::istreambuf_iterator<char>());
+  is_b.close();
+  json pdg_j = json::from_bson(pdg_b);
+
+  json attributesIndex_j = pdg_j["attributesIndex"];
+  json edges_j = pdg_j["edges"];
+  for (auto edge_j : edges_j) {
+    auto *fromInst = idInstMap[edge_j["from"]];
+    auto *toInst = idInstMap[edge_j["to"]];
+
+    auto edge = new DGEdge<Value>(pdg->fetchNode((Value *)fromInst), pdg->fetchNode((Value *)toInst));
+    edge->setEdgeAttributes(
+      edge_j["attributes"][(int)attributesIndex_j["isMemoryDependence"]] == 1,
+      edge_j["attributes"][(int)attributesIndex_j["isMustDependence"]] == 1,
+      edge_j["attributes"][(int)attributesIndex_j["dataDependenceString"]],
+      edge_j["attributes"][(int)attributesIndex_j["isControlDependence"]] == 1,
+      edge_j["attributes"][(int)attributesIndex_j["isLoopCarriedDependence"]] == 1,
+      edge_j["attributes"][(int)attributesIndex_j["isRemovableDependence"]] == 1
+    );
+
+    // TODO: build SetOfRemedies per pdg edge
+
+    pdg->copyAddEdge(*edge);
+  }
+
+  return pdg;
+}
+
+void PDG::dumpPDGAsJson (bool dumpJsonForAudit) {
+  json pdg_j = json::object();
 
   // go through all instructions, collect inst to id map
   std::unordered_map<Instruction  *, int> instIdMap;
@@ -463,8 +510,8 @@ void PDG::dumpPDGAsJson (void) {
     // we only care about instructions, not function args
     if (Instruction *inst = dyn_cast<Instruction>(node->getT())) {
       if (MDNode *m = inst->getMetadata("namer")) {
-        if (ValueAsMetadata *vsm = dyn_cast<ValueAsMetadata>(m->getOperand(1))) {
-          if (ConstantInt *cv = (ConstantInt *)vsm->getValue()) {
+        if (ConstantAsMetadata *cam = dyn_cast<ConstantAsMetadata>(m->getOperand(1))) {
+          if (ConstantInt *cv = (ConstantInt *)cam->getValue()) {
             instIdMap[inst] = (int)cv->getSExtValue();
           }
         }
@@ -472,46 +519,69 @@ void PDG::dumpPDGAsJson (void) {
     }
   }
 
-  // go through all edges, use map to get instruction id
+  // create attributes index object for reference, this can be further optimized/ommitted by following pre-determined position convention
+  json attributesIndex_j = json::object();
+  attributesIndex_j["isMemoryDependence"] = 0;
+  attributesIndex_j["isMustDependence"] = 1;
+  attributesIndex_j["dataDependenceString"] = 2;
+  attributesIndex_j["isControlDependence"] = 3;
+  attributesIndex_j["isLoopCarriedDependence"] = 4;
+  attributesIndex_j["isRemovableDependence"] = 5;
+  pdg_j["attributesIndex"] = attributesIndex_j;
+
+  json edges_j = json::array();
   for (auto *edge : this->getEdges()) {
-    if (Instruction *fromInst = dyn_cast<Instruction>(edge->getIncomingT())) {
-      if (Instruction *toInst = dyn_cast<Instruction>(edge->getOutgoingT())) {
+    // only collect dependence edges between instructions, not function args
+    if (Instruction *fromInst = dyn_cast<Instruction>(edge->getOutgoingT())) {
+      if (Instruction *toInst = dyn_cast<Instruction>(edge->getIncomingT())) {
         
         json edge_j = json::object();
         edge_j["from"] = instIdMap[fromInst];
         edge_j["to"] = instIdMap[toInst];
-        edge_j["isControlDependence"] = edge->isControlDependence();
-        edge_j["isDataDependence"] = edge->isDataDependence();
-        edge_j["isMemoryDependence"] = edge->isMemoryDependence();
-        edge_j["isLoopCarriedDependence"] = edge->isLoopCarriedDependence();
-        edge_j["isMustDependence"] = edge->isMustDependence();
-        edge_j["isRAWDependence"] = edge->isRAWDependence();
-        edge_j["isWARDependence"] = edge->isWARDependence();
-        edge_j["isWAWDependence"] = edge->isWAWDependence();
-        edge_j["isRemovableDependence"] = edge->isRemovableDependence();
 
-        json remeds_j = json::array();
+        json attributes_j = json::array();
+        attributes_j.push_back(edge->isMemoryDependence() ? 1 : 0);
+        attributes_j.push_back(edge->isMustDependence() ? 1 : 0);
+        attributes_j.push_back(edge->dataDepToString());
+        attributes_j.push_back(edge->isControlDependence() ? 1 : 0);
+        attributes_j.push_back(edge->isLoopCarriedDependence() ? 1 : 0);
+        attributes_j.push_back(edge->isRemovableDependence() ? 1 : 0);
+        edge_j["attributes"] = attributes_j;
+
         if (auto optional_remeds = edge->getRemedies()) {
-          for (auto remedies : *optional_remeds) {
+          json remeds_j = json::array();
+          for (auto remedies_ptr : optional_remeds.value()) {
             json remedies_j = json::array();
-            for (auto remedy : *remedies) {
+            for (auto remedy_ptr : *remedies_ptr) {
               json remedy_j = json::object();
-              remedy_j["name"] = remedy->getRemedyName();
-              remedy_j["cost"] = remedy->cost;
+              remedy_j["name"] = (*remedy_ptr).getRemedyName();
+              remedy_j["cost"] = (*remedy_ptr).cost;
               remedies_j.push_back(remedy_j);
             }
             remeds_j.push_back(remedies_j);
           }
+          // only create remeds field iff getting non-null through edge->getRemedies()
+          edge_j["remeds"] = remeds_j;
         }
-        edge_j["remeds"] = remeds_j;
 
-        pdg_j.push_back(edge_j);
+        edges_j.push_back(edge_j);
       }
     }
   }
+  pdg_j["edges"] = edges_j;
 
-  std::ofstream os_j("pdg.json");
-  os_j << pdg_j.dump(4) << std::endl;
+  if (dumpJsonForAudit) {
+    // dump pdg as json for auditing
+    std::ofstream os_j("pdg.json");
+    os_j << pdg_j.dump(2) << std::endl;
+    os_j.close();
+  }
+  
+  // dump pdg as bson for loading during pdg reconstruction
+  std::vector<std::uint8_t> pdg_b = json::to_bson(pdg_j);
+  std::ofstream os_b("pdg.bson", std::ios::out | std::ios::binary);
+  os_b.write((char *)&pdg_b[0], pdg_b.size() * sizeof(uint8_t));
+  os_b.close();
 
   return;
 }
