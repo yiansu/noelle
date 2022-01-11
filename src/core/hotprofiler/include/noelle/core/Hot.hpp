@@ -105,6 +105,8 @@ namespace llvm::noelle {
        *
        * @return Between 0 and 1
        */
+      double getSelfTotalInstructionCoverage (LoopStructure *loop) const ;
+
       double getDynamicTotalInstructionCoverage (LoopStructure *loop) const ;
 
       double getAverageTotalInstructionsPerInvocation (LoopStructure *loop) const ;

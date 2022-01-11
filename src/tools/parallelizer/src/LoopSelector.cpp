@@ -48,7 +48,7 @@ namespace llvm::noelle {
        * Check if the latency of each loop invocation is enough to justify the parallelization.
        */
       auto averageInstsPerInvocation = profiles->getAverageTotalInstructionsPerInvocation(ls);
-      auto averageInstsPerInvocationThreshold = 2000;
+      auto averageInstsPerInvocationThreshold = 0;
       if (  true
           && (!this->forceParallelization)
           && (averageInstsPerInvocation < averageInstsPerInvocationThreshold)
@@ -66,7 +66,7 @@ namespace llvm::noelle {
        * Check the number of iterations per invocation.
        */
       auto averageIterations = profiles->getAverageLoopIterationsPerInvocation(ls);
-      auto averageIterationThreshold = 12;
+      auto averageIterationThreshold = 0;
       if (    true
           && (!this->forceParallelization)
           && (averageIterations < averageIterationThreshold)
@@ -84,7 +84,7 @@ namespace llvm::noelle {
        * Check the minimum hotness
        */
       auto hotness = profiles->getDynamicTotalInstructionCoverage(ls) * 100;
-      auto minimumHotness = 2.0;
+      auto minimumHotness = 0.0;
       if (      true
             &&  (!this->forceParallelization)
             &&  (hotness < minimumHotness)
@@ -255,7 +255,7 @@ namespace llvm::noelle {
       /*
        * Check if the time saved is enough.
        */
-      if (savedTimeTotal < 2){
+      if (savedTimeTotal < 0){
         errs() << "Parallelizer: LoopSelector:  Loop " << ldi->getID() << " saves only " << savedTimeTotal << " when parallelized. Skip it\n";
         continue ;
       }

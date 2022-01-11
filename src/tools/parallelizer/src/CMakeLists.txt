@@ -2,6 +2,7 @@
 set(Srcs 
   Pass.cpp
   Parallelizer.cpp
+  Parallelizer_LoopStats.cpp
   Helper.cpp
   Printer.cpp
   LoopSelector.cpp
