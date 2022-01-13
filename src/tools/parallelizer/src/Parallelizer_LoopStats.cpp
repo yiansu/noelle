@@ -116,11 +116,14 @@ namespace llvm::noelle {
       tree->visitPreOrder(printTree);
     }
 
-    errs() << outputPrefix << "List: [";
+    string coverageList = "[";
     for (auto pair : nestedLoopAndCoverage) {
-      errs() << pair.second << ", ";
+      coverageList += std::to_string(pair.second) + ",";
     }
-    errs() << "]\n";
+    coverageList += "]";
+    errs() << outputPrefix << "List: " << coverageList << "\n";
+    std::ofstream file("coverage_list.txt");
+    file << coverageList << std::endl;
 
     double coverageForNestedLoops = 0.0;
     double coverageForNestedLoopsIfOuterIsDOALL = 0.0;
