@@ -48,6 +48,11 @@ namespace llvm::noelle {
     std::unordered_map<noelle::StayConnectedNestedLoopForestNode *, double> nestedLoopAndCoverage;
 
     /*
+     * Collect savings for every loop
+     */
+    std::unordered_map<noelle::StayConnectedNestedLoopForestNode *, double> loopSavings;
+
+    /*
      * Print loop stats
      */
     for (auto tree : trees) {
@@ -60,7 +65,7 @@ namespace llvm::noelle {
       /*
        * Lambda function to print loop stats per tree node
        */
-      auto printTree = [&noelle, profiles, &outputPrefix, &doall, &helix, &dswp, heuristics](noelle::StayConnectedNestedLoopForestNode *n, uint32_t treeLevel) {
+      auto printTree = [&noelle, profiles, &outputPrefix, &doall, &helix, &dswp, heuristics, &loopSavings](noelle::StayConnectedNestedLoopForestNode *n, uint32_t treeLevel) {
 
         /*
          * Fetch the loop information.
@@ -71,6 +76,23 @@ namespace llvm::noelle {
         auto loopHeader = loopStructure->getHeader();
         auto optimizations = { LoopDependenceInfoOptimization::MEMORY_CLONING_ID, LoopDependenceInfoOptimization::THREAD_SAFE_LIBRARY_ID };
         auto ldi = noelle.getLoop(loopStructure, optimizations);
+
+        /*
+         * Fetch the set of sequential SCCs and get the largest one
+         */
+        auto sequentialSCCs = DOALL::getSCCsThatBlockDOALLToBeApplicable(ldi, noelle);
+        uint64_t biggestSCCTime = 0;
+        for (auto sequentialSCC : sequentialSCCs) {
+          auto sequentialSCCTime = profiles->getTotalInstructions(sequentialSCC);
+          if (sequentialSCCTime > biggestSCCTime) {
+            biggestSCCTime = sequentialSCCTime;
+          }
+        }
+        auto instsPerIteration = profiles->getAverageTotalInstructionsPerIteration(loopStructure);
+        auto instsInBiggestSCCPerIteration = ((double)biggestSCCTime / (double)profiles->getIterations(loopStructure));
+        auto timeSavedPerIteration = (double)(instsPerIteration - instsInBiggestSCCPerIteration);
+        auto timeSaved = timeSavedPerIteration * profiles->getIterations(loopStructure);
+        loopSavings[n] = (uint64_t)timeSaved;
 
         /*
          * Compute the print prefix.
@@ -89,25 +111,17 @@ namespace llvm::noelle {
         errs() << prefix << "  Loop nesting level: " << loopStructure->getNestingLevel() << "\n";
 
         /*
-         * Check if there are profiles.
-         */
-        if (!profiles->isAvailable()){
-          errs() << prefix << "  !!! Profiler information is unavailable for this loop\n";
-          return false;
-        }
-
-        /*
          * Print the stats of this loop.
          */
         auto averageIterations = profiles->getAverageLoopIterationsPerInvocation(loopStructure);
-        errs() << prefix << "  Average iterations per invocation = " << averageIterations << " %\n";
+        errs() << prefix << "  Average iterations per invocation = " << averageIterations << "\n";
         auto averageInstsPerInvocation = profiles->getAverageTotalInstructionsPerInvocation(loopStructure);
-        errs() << prefix << "  Average instructions per invocation = " << averageInstsPerInvocation << " %\n"; 
+        errs() << prefix << "  Average instructions per invocation = " << averageInstsPerInvocation << "\n"; 
         auto hotness = profiles->getDynamicTotalInstructionCoverage(loopStructure) * 100;
         // auto hotness = profiles->getSelfTotalInstructionCoverage(loopStructure) * 100;
         errs() << prefix << "  Hotness/Coverage = " << hotness << " %\n";
         errs() << prefix << "  DOALLable?: " << (doall.canBeAppliedToLoop(ldi, noelle, heuristics) ? "true" : "false") << "\n";
-        
+        errs() << prefix << "  Savings: " << loopSavings[n] << "\n";
         errs() << prefix << "\n";
 
         return false;
