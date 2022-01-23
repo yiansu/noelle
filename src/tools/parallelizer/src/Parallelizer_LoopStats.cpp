@@ -18,14 +18,7 @@ namespace llvm::noelle {
     auto heuristics = getAnalysis<HeuristicsPass>().getHeuristics(noelle);
     auto profiles = noelle.getProfiles();
     auto verbosity = noelle.getVerbosity();
-
-    /*
-     * Allocate the parallelization techniques.
-     */
-    DSWP dswp{ M, *profiles, false, true, verbosity };
     DOALL doall{ noelle };
-    HELIX helix{ M, *profiles, false, verbosity };
-
 
     auto programLoops = noelle.getLoopStructures();
     if (programLoops->size() == 0) {
@@ -43,29 +36,44 @@ namespace llvm::noelle {
     errs() << outputPrefix << "There are " << trees.size() << " loop nesting trees in the program\n";
 
     /*
-     * Collect nested loops and their coverage information
+     * Tree and coverage information
+     */
+    std::unordered_map<noelle::StayConnectedNestedLoopForestNode *, double> loopTreeCoverage;
+
+    /*
+     * Nested loops and their coverage information
      */
     std::unordered_map<noelle::StayConnectedNestedLoopForestNode *, double> nestedLoopAndCoverage;
 
     /*
-     * Collect savings for every loop
+     * Savings for every loop
      */
     std::unordered_map<noelle::StayConnectedNestedLoopForestNode *, double> loopSavings;
 
     /*
-     * Print loop stats
+     * Go through every loop nest tree and apply lambda function on each loop
      */
     for (auto tree : trees) {
+      auto loopStructure = tree->getLoop();
+      auto optimizations = { LoopDependenceInfoOptimization::MEMORY_CLONING_ID, LoopDependenceInfoOptimization::THREAD_SAFE_LIBRARY_ID };
+      auto ldi = noelle.getLoop(loopStructure, optimizations);
 
-      if (!tree->getDescendants().empty()) {
-        nestedLoopAndCoverage[tree] = profiles->getDynamicTotalInstructionCoverage(tree->getLoop()) * 100;
-        // nestedLoopAndCoverage[tree] = profiles->getSelfTotalInstructionCoverage(tree->getLoop()) * 100;
+      /*
+       * Collect loop tree coverage information
+       */
+      loopTreeCoverage[tree] = profiles->getDynamicTotalInstructionCoverage(loopStructure) * 100;
+
+      /*
+       * Collect nested loop coverage information if outer loop is not DOALL
+       */
+      if (!tree->getDescendants().empty() && !doall.canBeAppliedToLoop(ldi, noelle, heuristics)) {
+        nestedLoopAndCoverage[tree] = profiles->getDynamicTotalInstructionCoverage(loopStructure) * 100;
       }
 
       /*
        * Lambda function to print loop stats per tree node
        */
-      auto printTree = [&noelle, profiles, &outputPrefix, &doall, &helix, &dswp, heuristics, &loopSavings](noelle::StayConnectedNestedLoopForestNode *n, uint32_t treeLevel) {
+      auto printLoop = [&noelle, profiles, &outputPrefix, &optimizations, &doall, heuristics, &loopSavings](noelle::StayConnectedNestedLoopForestNode *n, uint32_t treeLevel) -> bool {
 
         /*
          * Fetch the loop information.
@@ -74,7 +82,6 @@ namespace llvm::noelle {
         auto loopID = loopStructure->getID();
         auto loopFunction = loopStructure->getFunction();
         auto loopHeader = loopStructure->getHeader();
-        auto optimizations = { LoopDependenceInfoOptimization::MEMORY_CLONING_ID, LoopDependenceInfoOptimization::THREAD_SAFE_LIBRARY_ID };
         auto ldi = noelle.getLoop(loopStructure, optimizations);
 
         /*
@@ -113,58 +120,71 @@ namespace llvm::noelle {
         /*
          * Print the stats of this loop.
          */
-        auto averageIterations = profiles->getAverageLoopIterationsPerInvocation(loopStructure);
-        errs() << prefix << "  Average iterations per invocation = " << averageIterations << "\n";
-        auto averageInstsPerInvocation = profiles->getAverageTotalInstructionsPerInvocation(loopStructure);
-        errs() << prefix << "  Average instructions per invocation = " << averageInstsPerInvocation << "\n"; 
-        auto hotness = profiles->getDynamicTotalInstructionCoverage(loopStructure) * 100;
-        // auto hotness = profiles->getSelfTotalInstructionCoverage(loopStructure) * 100;
-        errs() << prefix << "  Hotness/Coverage = " << hotness << " %\n";
+        errs() << prefix << "  Hotness/Coverage = " << profiles->getDynamicTotalInstructionCoverage(loopStructure) * 100 << " %\n";
         errs() << prefix << "  DOALLable?: " << (doall.canBeAppliedToLoop(ldi, noelle, heuristics) ? "true" : "false") << "\n";
         errs() << prefix << "  Savings: " << loopSavings[n] << "\n";
+        errs() << prefix << "  Average iterations per invocation = " << profiles->getAverageLoopIterationsPerInvocation(loopStructure) << "\n";
+        errs() << prefix << "  Average instructions per invocation = " << profiles->getAverageTotalInstructionsPerInvocation(loopStructure) << "\n"; 
         errs() << prefix << "\n";
 
         return false;
       };
 
-      tree->visitPreOrder(printTree);
+      tree->visitPreOrder(printLoop);
     }
 
-    string coverageList = "[";
-    for (auto pair : nestedLoopAndCoverage) {
-      coverageList += std::to_string(pair.second) + ",";
+    /*
+     * DOALL coverage
+     */
+    std::unordered_map<noelle::StayConnectedNestedLoopForestNode *, double> doallCoverage;
+
+    /*
+     * Collect DOALL coverage
+     */
+    for (auto tree : trees) {
+      collectDOALLCoverage(tree, noelle, heuristics, profiles, doall, doallCoverage);
     }
-    coverageList += "]";
-    errs() << outputPrefix << "List: " << coverageList << "\n";
-    std::ofstream file("coverage_list.txt");
-    file << coverageList << std::endl;
+
+    /*
+     * Print total coverage information
+     */
+    double coverageForAllLoopTrees = 0.0;
+    for (auto pair : loopTreeCoverage) {
+      coverageForAllLoopTrees += pair.second;
+    }
+    errs() << outputPrefix << "Total loop tree coverage: " << coverageForAllLoopTrees << "\n";
+    if (coverageForAllLoopTrees > 100.0) {
+      errs() << outputPrefix << "Attention!! Total loop trees coverage sum over 100\n";
+    }
+
+    /*
+     * Print and save nested loop coverage informtion
+     */
+    string nestedLoopCoverageList = createCoverageListString(nestedLoopAndCoverage);
+    errs() << outputPrefix << "Nested loop coverage list: " << nestedLoopCoverageList << "\n";
+    saveCoverageListString(nestedLoopCoverageList, "nested_loop_coverage_list.txt");
 
     double coverageForNestedLoops = 0.0;
-    double coverageForNestedLoopsIfOuterIsDOALL = 0.0;
     for (auto pair : nestedLoopAndCoverage) {
-      auto node = pair.first;
-      auto loopStructure = node->getLoop();
-      auto optimizations = { LoopDependenceInfoOptimization::MEMORY_CLONING_ID, LoopDependenceInfoOptimization::THREAD_SAFE_LIBRARY_ID };
-      auto ldi = noelle.getLoop(loopStructure, optimizations);
       coverageForNestedLoops += pair.second;
-
-      // if outer loop is doallable, calculate coverages sum of inner loop
-      if (doall.canBeAppliedToLoop(ldi, noelle, heuristics)) {
-        for (auto descend : node->getDescendants()) {
-          coverageForNestedLoopsIfOuterIsDOALL += profiles->getDynamicTotalInstructionCoverage(descend->getLoop()) * 100;
-          // coverageForNestedLoopsIfOuterIsDOALL += profiles->getSelfTotalInstructionCoverage(descend->getLoop()) * 100;
-        }
-      } else {
-        coverageForNestedLoopsIfOuterIsDOALL += pair.second;
-      }
-      
-      errs() << outputPrefix << "ID: " << loopStructure->getID() << *loopStructure->getHeader()->getFirstNonPHI() << " with hotness " << pair.second << "\n";
     }
-    errs() << outputPrefix << "There are " << nestedLoopAndCoverage.size() << " nested loops with a total coverage of " << coverageForNestedLoops << ", coverage excluding doallable outer loop is " << coverageForNestedLoopsIfOuterIsDOALL << "\n";
+    errs() << outputPrefix << "Totoal nested loop coverage: " << coverageForNestedLoops << "\n";
     if (coverageForNestedLoops > 100.0) {
-      errs() << outputPrefix << "Attention!! Coverage sum over 100\n";
+      errs() << outputPrefix << "Attention!! Total nested loop coverage sum over 100\n";
     }
 
+    /*
+     * Print and save doall coverage information
+     */
+    string doallLoopCoverageList = createCoverageListString(doallCoverage);
+    errs() << outputPrefix << "DOALL coverage list: " << doallLoopCoverageList << "\n";
+    saveCoverageListString(doallLoopCoverageList, "doall_coverage_list.txt");
+
+    double coverageForDOALL = 0.0;
+    for (auto pair : doallCoverage) {
+      coverageForDOALL += pair.second;
+    }
+    errs() << outputPrefix << "Total DOALL coverage: " << coverageForDOALL << "\n";
 
     errs() << "Parallelizer_LoopStats: End\n";
     return false;
@@ -176,6 +196,38 @@ namespace llvm::noelle {
 
     return ;
   }
+}
+
+void Parallelizer_LoopStats::collectDOALLCoverage(noelle::StayConnectedNestedLoopForestNode *tree, noelle::Noelle &noelle, noelle::Heuristics *heuristics, noelle::Hot *profiles, noelle::DOALL &doall, std::unordered_map<noelle::StayConnectedNestedLoopForestNode *, double> &doallCoverage) {
+  auto loopStructure = tree->getLoop();
+  auto optimizations = { LoopDependenceInfoOptimization::MEMORY_CLONING_ID, LoopDependenceInfoOptimization::THREAD_SAFE_LIBRARY_ID };
+  auto ldi = noelle.getLoop(loopStructure, optimizations);
+
+  if (doall.canBeAppliedToLoop(ldi, noelle, heuristics)) {
+    doallCoverage[tree] = profiles->getDynamicTotalInstructionCoverage(loopStructure) * 100;
+    return ;
+  }
+
+  for (auto descend : tree->getDescendants()) {
+    collectDOALLCoverage(descend, noelle, heuristics, profiles, doall, doallCoverage);
+  }
+
+  return ;
+}
+
+std::string Parallelizer_LoopStats::createCoverageListString(std::unordered_map<llvm::noelle::StayConnectedNestedLoopForestNode *, double> &coverageMap) {
+  std::string coverageListString = "[";
+  for (auto pair : coverageMap) {
+    coverageListString += std::to_string(pair.second) + ",";
+  }
+  coverageListString += "]";
+
+  return coverageListString;
+}
+
+void Parallelizer_LoopStats::saveCoverageListString(std::string &coverageString, const char *fileName) {
+  std::ofstream file(fileName);
+  file << coverageString << std::endl;
 }
 
 // Next there is code to register your pass to "opt"
