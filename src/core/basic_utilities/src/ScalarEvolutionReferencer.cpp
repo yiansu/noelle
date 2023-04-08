@@ -145,6 +145,14 @@ SCEVReference *ReferenceTreeBuilder::visitSignExtendExpr(
   return createReferenceOfSingleInScopeValue(S);
 }
 
+SCEVReference *ReferenceTreeBuilder::visitSequentialUMinExpr(const SCEVSequentialUMinExpr *S) {
+  return nullptr;
+}
+
+SCEVReference *ReferenceTreeBuilder::visitPtrToIntExpr(const SCEVPtrToIntExpr *S) {
+  return nullptr;
+}
+
 SCEVReference *ReferenceTreeBuilder::visitAddExpr(const SCEVAddExpr *S) {
   return createReferenceOfNArySCEV(S);
 }

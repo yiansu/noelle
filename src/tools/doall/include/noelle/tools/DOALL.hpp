@@ -30,7 +30,7 @@
 #include "noelle/core/Noelle.hpp"
 #include "noelle/core/IVStepperUtility.hpp"
 #include "noelle/tools/ParallelizationTechnique.hpp"
-#include "HeuristicsPass.hpp"
+// #include "HeuristicsPass.hpp"
 
 namespace llvm::noelle {
 

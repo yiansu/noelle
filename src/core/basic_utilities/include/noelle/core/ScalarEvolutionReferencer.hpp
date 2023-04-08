@@ -100,6 +100,8 @@ private:
   SCEVReference *visitAddExpr(const SCEVAddExpr *S);
   SCEVReference *visitMulExpr(const SCEVMulExpr *S);
   SCEVReference *visitUDivExpr(const SCEVUDivExpr *S);
+  SCEVReference *visitSequentialUMinExpr(const SCEVSequentialUMinExpr *S);
+  SCEVReference *visitPtrToIntExpr(const SCEVPtrToIntExpr *S);
   SCEVReference *visitAddRecExpr(const SCEVAddRecExpr *S);
   SCEVReference *visitSMaxExpr(const SCEVSMaxExpr *S);
   SCEVReference *visitUMaxExpr(const SCEVUMaxExpr *S);

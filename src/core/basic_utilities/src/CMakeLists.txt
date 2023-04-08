@@ -2,6 +2,7 @@
 set(Srcs 
   BitMatrix.cpp
   Utils.cpp
+  ScalarEvolutionReferencer.cpp
 )
 
 # Compilation flags
