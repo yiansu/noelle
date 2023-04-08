@@ -36,7 +36,7 @@ PDGAnalysis::PDGAnalysis()
     dumpPDG{ false },
     performThePDGComparison{ false },
     disableSVF{ false },
-    disableAllocAA{ false },
+    disableAllocAA{ true },
     disableRA{ false },
     printer{},
     noelleCG{ nullptr } {
@@ -484,7 +484,7 @@ void PDGAnalysis::trimDGUsingCustomAliasAnalysis(PDG *pdg) {
   /*
    * Fetch AllocAA
    */
-  this->allocAA = &getAnalysis<AllocAA>();
+  // this->allocAA = &getAnalysis<AllocAA>();
   if (this->disableAllocAA) {
     return;
   }
@@ -663,9 +663,9 @@ bool PDGAnalysis::canMemoryEdgeBeRemoved(PDG *pdg, DGEdge<Value> *edge) {
    * Handle the case where the two instructions are not calls.
    */
   if ((!isa<CallBase>(i0)) && (!isa<CallBase>(i1))) {
-    if (!this->allocAA->canPointToTheSameObject(i0, i1)) {
-      return true;
-    }
+    // if (!this->allocAA->canPointToTheSameObject(i0, i1)) {
+    //   return true;
+    // }
 
     return false;
   }
@@ -715,7 +715,7 @@ bool PDGAnalysis::canMemoryEdgeBeRemoved(PDG *pdg, DGEdge<Value> *edge) {
    * are used to read memory by the library call.
    */
   std::unordered_set<Value *> objects;
-  for (auto argID = 0; argID < callInst->getNumArgOperands(); argID++) {
+  for (auto argID = 0; argID < callInst->arg_size(); argID++) {
     auto arg = callInst->getArgOperand(argID);
     auto argType = arg->getType();
     if (argType->isPointerTy()) {
@@ -742,10 +742,10 @@ bool PDGAnalysis::canMemoryEdgeBeRemoved(PDG *pdg, DGEdge<Value> *edge) {
    */
   auto doOverlap = false;
   for (auto o0 : objects) {
-    if (this->allocAA->canPointToTheSameObject(o0, o1)) {
-      doOverlap = true;
-      break;
-    }
+    // if (this->allocAA->canPointToTheSameObject(o0, o1)) {
+    //   doOverlap = true;
+    //   break;
+    // }
   }
   if (!doOverlap) {
     return true;
@@ -814,86 +814,87 @@ bool PDGAnalysis::isBackedgeOfLoadStoreIntoSameOffsetOfArray(
     DGEdge<Value> *edge,
     LoadInst *load,
     StoreInst *store) {
-  auto access1 = allocAA->getPrimitiveArrayAccess(load);
-  auto access2 = allocAA->getPrimitiveArrayAccess(store);
+  // auto access1 = allocAA->getPrimitiveArrayAccess(load);
+  // auto access2 = allocAA->getPrimitiveArrayAccess(store);
 
-  auto gep1 = access1.second;
-  auto gep2 = access2.second;
-  if (!gep1 || !gep2)
-    return false;
-  if (!allocAA->areIdenticalGEPAccessesInSameLoop(gep1, gep2))
-    return false;
-  ;
-  if (!allocAA->areGEPIndicesConstantOrIV(gep1))
-    return false;
+  // auto gep1 = access1.second;
+  // auto gep2 = access2.second;
+  // if (!gep1 || !gep2)
+  //   return false;
+  // if (!allocAA->areIdenticalGEPAccessesInSameLoop(gep1, gep2))
+  //   return false;
+  // ;
+  // if (!allocAA->areGEPIndicesConstantOrIV(gep1))
+  //   return false;
 
-  auto outgoingI = (Instruction *)(edge->getOutgoingT());
-  auto incomingI = (Instruction *)(edge->getIncomingT());
-  if (canPrecedeInCurrentIteration(outgoingI, incomingI)) {
-    return false;
-  }
+  // auto outgoingI = (Instruction *)(edge->getOutgoingT());
+  // auto incomingI = (Instruction *)(edge->getIncomingT());
+  // if (canPrecedeInCurrentIteration(outgoingI, incomingI)) {
+  //   return false;
+  // }
 
   return true;
 }
 
 bool PDGAnalysis::isBackedgeIntoSameGlobal(DGEdge<Value> *edge) {
-  auto access1 = allocAA->getPrimitiveArrayAccess(edge->getOutgoingT());
-  auto access2 = allocAA->getPrimitiveArrayAccess(edge->getIncomingT());
+  // auto access1 = allocAA->getPrimitiveArrayAccess(edge->getOutgoingT());
+  // auto access2 = allocAA->getPrimitiveArrayAccess(edge->getIncomingT());
 
-  /*
-   * Ensure the same global variable is accessed by the edge values
-   */
-  auto array1 = access1.first;
-  auto array2 = access2.first;
-  if (!array1 || !isa<GlobalValue>(array1))
-    return false;
-  if (array1 != array2)
-    return false;
+  // /*
+  //  * Ensure the same global variable is accessed by the edge values
+  //  */
+  // auto array1 = access1.first;
+  // auto array2 = access2.first;
+  // if (!array1 || !isa<GlobalValue>(array1))
+  //   return false;
+  // if (array1 != array2)
+  //   return false;
 
-  /*
-   * Ensure either of the following:
-   *  1) two load accesses using the same IV governed GEP
-   *  2) a store into the GEP and a load of the entire GV
-   */
-  auto GEP1 = access1.second;
-  auto GEP2 = access2.second;
-  if (GEP1 && !allocAA->areGEPIndicesConstantOrIV(GEP1))
-    return false;
-  if (GEP2 && !allocAA->areGEPIndicesConstantOrIV(GEP2))
-    return false;
-  if (GEP1 && GEP2) {
-    if (!allocAA->areIdenticalGEPAccessesInSameLoop(GEP1, GEP2))
-      return false;
-    if (!isa<LoadInst>(edge->getOutgoingT())
-        || !isa<LoadInst>(edge->getIncomingT()))
-      return false;
-  } else if (GEP1) {
-    if (!isa<StoreInst>(edge->getOutgoingT())
-        || !isa<LoadInst>(edge->getIncomingT()))
-      return false;
-  } else if (GEP2) {
-    if (!isa<LoadInst>(edge->getOutgoingT())
-        || !isa<StoreInst>(edge->getIncomingT()))
-      return false;
-  } else
-    return false;
+  // /*
+  //  * Ensure either of the following:
+  //  *  1) two load accesses using the same IV governed GEP
+  //  *  2) a store into the GEP and a load of the entire GV
+  //  */
+  // auto GEP1 = access1.second;
+  // auto GEP2 = access2.second;
+  // if (GEP1 && !allocAA->areGEPIndicesConstantOrIV(GEP1))
+  //   return false;
+  // if (GEP2 && !allocAA->areGEPIndicesConstantOrIV(GEP2))
+  //   return false;
+  // if (GEP1 && GEP2) {
+  //   if (!allocAA->areIdenticalGEPAccessesInSameLoop(GEP1, GEP2))
+  //     return false;
+  //   if (!isa<LoadInst>(edge->getOutgoingT())
+  //       || !isa<LoadInst>(edge->getIncomingT()))
+  //     return false;
+  // } else if (GEP1) {
+  //   if (!isa<StoreInst>(edge->getOutgoingT())
+  //       || !isa<LoadInst>(edge->getIncomingT()))
+  //     return false;
+  // } else if (GEP2) {
+  //   if (!isa<LoadInst>(edge->getOutgoingT())
+  //       || !isa<StoreInst>(edge->getIncomingT()))
+  //     return false;
+  // } else
+  //   return false;
 
-  /*
-   * Ensure that the edge is a backedge
-   */
-  auto outgoingI = (Instruction *)(edge->getOutgoingT());
-  auto incomingI = (Instruction *)(edge->getIncomingT());
-  if (canPrecedeInCurrentIteration(outgoingI, incomingI)) {
-    return false;
-  }
+  // /*
+  //  * Ensure that the edge is a backedge
+  //  */
+  // auto outgoingI = (Instruction *)(edge->getOutgoingT());
+  // auto incomingI = (Instruction *)(edge->getIncomingT());
+  // if (canPrecedeInCurrentIteration(outgoingI, incomingI)) {
+  //   return false;
+  // }
 
   return true;
 }
 
 bool PDGAnalysis::isMemoryAccessIntoDifferentArrays(DGEdge<Value> *edge) {
-  Value *array1 = allocAA->getPrimitiveArrayAccess(edge->getOutgoingT()).first;
-  Value *array2 = allocAA->getPrimitiveArrayAccess(edge->getIncomingT()).first;
-  return (array1 && array2 && array1 != array2);
+  // Value *array1 = allocAA->getPrimitiveArrayAccess(edge->getOutgoingT()).first;
+  // Value *array2 = allocAA->getPrimitiveArrayAccess(edge->getIncomingT()).first;
+  // return (array1 && array2 && array1 != array2);
+  return false;
 }
 
 bool PDGAnalysis::canPrecedeInCurrentIteration(Instruction *from,
@@ -961,16 +962,16 @@ bool PDGAnalysis::edgeIsAlongNonMemoryWritingFunctions(DGEdge<Value> *edge) {
    * Auxiliary code.
    */
   auto isFunctionMemoryless = [&](StringRef funcName) -> bool {
-    auto isMemoryless = allocAA->isMemoryless(funcName);
-    return isMemoryless;
+    // auto isMemoryless = allocAA->isMemoryless(funcName);
+    return false;
   };
   auto isFunctionNonWriting = [&](StringRef funcName) -> bool {
     if (isFunctionMemoryless(funcName)) {
       return true;
     }
-    if (allocAA->isReadOnly(funcName)) {
-      return true;
-    }
+    // if (allocAA->isReadOnly(funcName)) {
+    //   return true;
+    // }
     return false;
   };
   auto getCallFnName = [&](CallInst *call) -> StringRef {

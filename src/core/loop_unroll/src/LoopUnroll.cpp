@@ -36,72 +36,72 @@ bool LoopUnroll::fullyUnrollLoop(LoopDependenceInfo const &LDI,
                                  AssumptionCache &AC) {
   auto modified = false;
 
-  /*
-   * Fetch the loop summary
-   */
-  auto ls = LDI.getLoopStructure();
+  // /*
+  //  * Fetch the loop summary
+  //  */
+  // auto ls = LDI.getLoopStructure();
 
-  /*
-   * Check if the loop has compile time known trip count.
-   */
-  if (!LDI.doesHaveCompileTimeKnownTripCount()) {
-    return false;
-  }
+  // /*
+  //  * Check if the loop has compile time known trip count.
+  //  */
+  // if (!LDI.doesHaveCompileTimeKnownTripCount()) {
+  //   return false;
+  // }
 
-  /*
-   * Fetch the function that includes the loop.
-   */
-  auto loopFunction = ls->getFunction();
+  // /*
+  //  * Fetch the function that includes the loop.
+  //  */
+  // auto loopFunction = ls->getFunction();
 
-  /*
-   * Fetch the LLVM loop.
-   */
-  auto h = ls->getHeader();
-  auto llvmLoop = LI.getLoopFor(h);
+  // /*
+  //  * Fetch the LLVM loop.
+  //  */
+  // auto h = ls->getHeader();
+  // auto llvmLoop = LI.getLoopFor(h);
 
-  /*
-   * Fetch the trip count.
-   */
-  auto tripCount = LDI.getCompileTimeTripCount();
+  // /*
+  //  * Fetch the trip count.
+  //  */
+  // auto tripCount = LDI.getCompileTimeTripCount();
 
-  /*
-   * Try to unroll the loop
-   */
-  UnrollLoopOptions opts;
-  opts.Count = tripCount;
-  opts.TripCount = tripCount;
-  opts.Force = false;
-  opts.AllowRuntime = false;
-  opts.AllowExpensiveTripCount = true;
-  opts.PreserveCondBr = false;
-  opts.TripMultiple = SE.getSmallConstantTripMultiple(llvmLoop);
-  opts.PeelCount = 0;
-  opts.UnrollRemainder = false;
-  opts.ForgetAllSCEV = false;
-  OptimizationRemarkEmitter ORE(loopFunction);
-  auto unrolled = UnrollLoop(llvmLoop, opts, &LI, &SE, &DT, &AC, &ORE, true);
+  // /*
+  //  * Try to unroll the loop
+  //  */
+  // UnrollLoopOptions opts;
+  // opts.Count = tripCount;
+  // opts.TripCount = tripCount;
+  // opts.Force = false;
+  // opts.AllowRuntime = false;
+  // opts.AllowExpensiveTripCount = true;
+  // opts.PreserveCondBr = false;
+  // opts.TripMultiple = SE.getSmallConstantTripMultiple(llvmLoop);
+  // opts.PeelCount = 0;
+  // opts.UnrollRemainder = false;
+  // opts.ForgetAllSCEV = false;
+  // OptimizationRemarkEmitter ORE(loopFunction);
+  // auto unrolled = UnrollLoop(llvmLoop, opts, &LI, &SE, &DT, &AC, &ORE, true);
 
-  /*
-   * Check if the loop unrolled.
-   */
-  switch (unrolled) {
-    case LoopUnrollResult::FullyUnrolled:
-      errs() << "   Fully unrolled\n";
-      modified = true;
-      break;
+  // /*
+  //  * Check if the loop unrolled.
+  //  */
+  // switch (unrolled) {
+  //   case LoopUnrollResult::FullyUnrolled:
+  //     errs() << "   Fully unrolled\n";
+  //     modified = true;
+  //     break;
 
-    case LoopUnrollResult::PartiallyUnrolled:
-      errs() << "   Partially unrolled\n";
-      abort();
+  //   case LoopUnrollResult::PartiallyUnrolled:
+  //     errs() << "   Partially unrolled\n";
+  //     abort();
 
-    case LoopUnrollResult::Unmodified:
-      errs() << "   Not unrolled\n";
-      modified = false;
-      break;
+  //   case LoopUnrollResult::Unmodified:
+  //     errs() << "   Not unrolled\n";
+  //     modified = false;
+  //     break;
 
-    default:
-      abort();
-  }
+  //   default:
+  //     abort();
+  // }
 
   return modified;
 }

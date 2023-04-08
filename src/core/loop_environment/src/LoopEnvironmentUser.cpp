@@ -44,7 +44,7 @@ void LoopEnvironmentUser::setEnvironmentArray(Value *envArr) {
 }
 
 Instruction *LoopEnvironmentUser::createEnvironmentVariablePointer(
-    IRBuilder<> builder,
+    IRBuilder<> &builder,
     uint32_t envID,
     Type *type) {
 
@@ -85,7 +85,8 @@ Instruction *LoopEnvironmentUser::createEnvironmentVariablePointer(
    * Compute the address of the environment variable
    */
   auto envGEP =
-      builder.CreateInBoundsGEP(this->envArray,
+      builder.CreateInBoundsGEP(type,
+                                this->envArray,
                                 ArrayRef<Value *>({ zeroV, envIndV }));
   auto envPtr = builder.CreateBitCast(envGEP, PointerType::getUnqual(type));
 
@@ -98,7 +99,7 @@ Instruction *LoopEnvironmentUser::createEnvironmentVariablePointer(
   return ptrInst;
 }
 
-void LoopEnvironmentUser::createReducableEnvPtr(IRBuilder<> builder,
+void LoopEnvironmentUser::createReducableEnvPtr(IRBuilder<> &builder,
                                                 uint32_t envID,
                                                 Type *type,
                                                 uint32_t reducerCount,
@@ -127,7 +128,8 @@ void LoopEnvironmentUser::createReducableEnvPtr(IRBuilder<> builder,
       cast<Value>(ConstantInt::get(int64, envIndex * valuesInCacheLine));
 
   auto envReduceGEP =
-      builder.CreateInBoundsGEP(this->envArray,
+      builder.CreateInBoundsGEP(type,
+                                this->envArray,
                                 ArrayRef<Value *>({ zeroV, envIndV }));
   auto arrPtr = PointerType::getUnqual(
       ArrayType::get(int64, reducerCount * valuesInCacheLine));
@@ -138,7 +140,8 @@ void LoopEnvironmentUser::createReducableEnvPtr(IRBuilder<> builder,
       builder.CreateMul(reducerIndV,
                         ConstantInt::get(int64, valuesInCacheLine));
   auto envGEP = builder.CreateInBoundsGEP(
-      builder.CreateLoad(envReducePtr),
+      type,
+      builder.CreateLoad(type, envReducePtr),
       ArrayRef<Value *>({ zeroV, reduceIndAlignedV }));
   auto envPtr = builder.CreateBitCast(envGEP, PointerType::getUnqual(type));
 

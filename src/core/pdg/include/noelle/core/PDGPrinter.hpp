@@ -62,7 +62,7 @@ public:
     DGGraphWrapper<GT, T> graphWrapper(graph);
 
     std::error_code EC;
-    raw_fd_ostream File(filename, EC, sys::fs::F_Text);
+    raw_fd_ostream File(filename, EC, sys::fs::FA_Write);
     std::string Title =
         filename; // TODO: DOTGraphTraits<GT *>::getGraphName(graphWrapper);
 

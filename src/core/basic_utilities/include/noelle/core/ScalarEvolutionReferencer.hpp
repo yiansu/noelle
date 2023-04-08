@@ -56,6 +56,8 @@ public:
 private:
   friend class SCEVVisitor<ReferenceTreeExpander, Value *>;
 
+  Value *visitPtrToIntExpr(const SCEVPtrToIntExpr *Expr);
+  Value *visitSequentialUMinExpr(const SCEVSequentialUMinExpr *Expr);
   Value *visitConstant(const SCEVConstant *S);
   Value *visitTruncateExpr(const SCEVTruncateExpr *S);
   Value *visitZeroExtendExpr(const SCEVZeroExtendExpr *S);

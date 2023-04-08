@@ -322,6 +322,7 @@ BasicBlock *ParallelizationTechnique::
       envVar = envBuilder->getAccumulatedReducedEnvironmentVariable(envID);
     } else {
       envVar = afterReductionBuilder->CreateLoad(
+          prod->getType(),
           envBuilder->getEnvironmentVariable(envID),
           "noelle.environment_variable.live_out.reduction");
     }
@@ -694,7 +695,7 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop(
                                                         newLiveInEnvironmentID,
                                                         opJ->getType());
           auto environmentLocationLoad =
-              entryBuilder.CreateLoad(envVarPtr,
+              entryBuilder.CreateLoad(opJ->getType(), envVarPtr,
                                       "noelle.environment_variable.live_in");
 
           /*
@@ -761,6 +762,7 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop(
                                                       newLiveInEnvironmentID,
                                                       alloca->getType());
         auto environmentLocationLoad = entryBuilderAtTheEnd.CreateLoad(
+            alloca->getType(),
             envVarPtr,
             "noelle.environment_variable.live_in");
 
@@ -863,7 +865,7 @@ void ParallelizationTechnique::generateCodeToLoadLiveInVariables(
      */
     auto metaString = std::string{ "noelle_environment_variable_" };
     metaString.append(std::to_string(envID));
-    auto envLoad = builder.CreateLoad(envPointer, metaString);
+    auto envLoad = builder.CreateLoad(producer->getType(), envPointer, metaString);
 
     /*
      * Register the load as a "clone" of the original producer
@@ -1610,7 +1612,7 @@ void ParallelizationTechnique::doNestedInlineOfCalls(
       }
 
       InlineFunctionInfo IFI;
-      InlineFunction(callToInline, IFI);
+      InlineFunction(*callToInline, IFI);
     }
 
     /*

@@ -281,21 +281,21 @@ void LoopIterationDomainSpaceAnalysis::computeMemoryAccessSpace(
 
     auto accessFunction =
         SE.getMinusSCEV(memAccessSpace->memoryAccessorSCEV, basePointer);
-    ScalarEvolutionDelinearization::delinearize(SE,
-                                                accessFunction,
-                                                memAccessSpace->subscripts,
-                                                memAccessSpace->sizes,
-                                                memAccessSpace->elementSize);
+    // ScalarEvolutionDelinearization::delinearize(SE,
+    //                                             accessFunction,
+    //                                             memAccessSpace->subscripts,
+    //                                             memAccessSpace->sizes,
+    //                                             memAccessSpace->elementSize);
 
     if (memAccessSpace->subscripts.size() == 0) {
       if (auto gep =
               dyn_cast<GetElementPtrInst>(memAccessSpace->memoryAccessor)) {
         SmallVector<int, 4> sizes;
-        ScalarEvolutionDelinearization::getIndexExpressionsFromGEP(
-            SE,
-            gep,
-            memAccessSpace->subscripts,
-            sizes);
+        // ScalarEvolutionDelinearization::getIndexExpressionsFromGEP(
+        //     SE,
+        //     gep,
+        //     memAccessSpace->subscripts,
+        //     sizes);
         for (auto size : sizes) {
           memAccessSpace->sizes.push_back(
               SE.getConstant(accessFunction->getType(), size));

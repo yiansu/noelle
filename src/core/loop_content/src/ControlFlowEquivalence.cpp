@@ -93,7 +93,7 @@ void ControlFlowEquivalence::calculateControlFlowEquivalences(
       continue;
 
     std::unordered_set<BasicBlock *> dtChildrenBlocks{};
-    for (auto dtChildNode : dtNode->getChildren()) {
+    for (auto dtChildNode : dtNode->children()) {
       dtChildrenBlocks.insert(dtChildNode->getBlock());
     }
 
@@ -116,7 +116,7 @@ void ControlFlowEquivalence::calculateControlFlowEquivalences(
         break;
       } else {
         dtChildrenBlocks.clear();
-        for (auto dtChildNode : DS->DT.getNode(pdtBlock)->getChildren()) {
+        for (auto dtChildNode : DS->DT.getNode(pdtBlock)->children()) {
           dtChildrenBlocks.insert(dtChildNode->getBlock());
         }
       }
@@ -138,7 +138,7 @@ void ControlFlowEquivalence::calculateControlFlowEquivalences(
     /*
      * Queue all children to continue traversal
      */
-    for (auto dtChildNode : dtNode->getChildren()) {
+    for (auto dtChildNode : dtNode->children()) {
       // dtChildNode->getBlock()->printAsOperand(errs() << "CFE: Going to: ");
       // errs() << "\n";
       dtWorklist.push(dtChildNode);

@@ -20,6 +20,7 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "noelle/core/ScalarEvolutionDelinearization.hpp"
+#include "llvm/Analysis/Delinearization.h"
 
 using namespace llvm;
 
@@ -37,7 +38,7 @@ bool ScalarEvolutionDelinearization::getIndexExpressionsFromGEP(
     const SCEV *Expr = SE.getSCEV(GEP->getOperand(i));
     if (i == 1) {
       if (auto *PtrTy = dyn_cast<PointerType>(Ty)) {
-        Ty = PtrTy->getElementType();
+        Ty = PtrTy->getPointerElementType();
       } else if (auto *ArrayTy = dyn_cast<ArrayType>(Ty)) {
         Ty = ArrayTy->getElementType();
       } else {
@@ -233,13 +234,13 @@ void ScalarEvolutionDelinearization::delinearize(
     const SCEV *ElementSize) {
   // First step: collect parametric terms.
   SmallVector<const SCEV *, 4> Terms;
-  SE.collectParametricTerms(Expr, Terms);
+  collectParametricTerms(SE, Expr, Terms);
 
   if (Terms.empty())
     return;
 
   // Second step: find subscript sizes.
-  SE.findArrayDimensions(Terms, Sizes, ElementSize);
+  findArrayDimensions(SE, Terms, Sizes, ElementSize);
 
   if (Sizes.empty())
     return;

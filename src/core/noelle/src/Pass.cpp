@@ -24,6 +24,8 @@
 #include "noelle/core/PDGAnalysis.hpp"
 #include "noelle/core/Architecture.hpp"
 
+#include "llvm/Analysis/TargetLibraryInfo.h"
+
 namespace llvm::noelle {
 
 static cl::opt<int> Verbose(

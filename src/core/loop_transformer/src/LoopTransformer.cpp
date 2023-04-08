@@ -41,52 +41,52 @@ void LoopTransformer::setPDG(PDG *programDependenceGraph) {
 LoopUnrollResult LoopTransformer::unrollLoop(LoopDependenceInfo *loop,
                                              uint32_t unrollFactor) {
 
-  /*
-   * Fetch the function that contains the loop we want to unroll.
-   */
-  auto ls = loop->getLoopStructure();
-  auto lsFunction = ls->getFunction();
+  // /*
+  //  * Fetch the function that contains the loop we want to unroll.
+  //  */
+  // auto ls = loop->getLoopStructure();
+  // auto lsFunction = ls->getFunction();
 
-  /*
-   * Fetch the trip count.
-   */
-  auto loopTripCount = (uint32_t)loop->getCompileTimeTripCount();
+  // /*
+  //  * Fetch the trip count.
+  //  */
+  // auto loopTripCount = (uint32_t)loop->getCompileTimeTripCount();
 
-  /*
-   * Fetch the LLVM loop abstractions.
-   */
-  auto &LLVMLoops = getAnalysis<LoopInfoWrapperPass>(*lsFunction).getLoopInfo();
-  auto &DT = getAnalysis<DominatorTreeWrapperPass>(*lsFunction).getDomTree();
-  auto &SE = getAnalysis<ScalarEvolutionWrapperPass>(*lsFunction).getSE();
-  auto &AC =
-      getAnalysis<AssumptionCacheTracker>().getAssumptionCache(*lsFunction);
+  // /*
+  //  * Fetch the LLVM loop abstractions.
+  //  */
+  // auto &LLVMLoops = getAnalysis<LoopInfoWrapperPass>(*lsFunction).getLoopInfo();
+  // auto &DT = getAnalysis<DominatorTreeWrapperPass>(*lsFunction).getDomTree();
+  // auto &SE = getAnalysis<ScalarEvolutionWrapperPass>(*lsFunction).getSE();
+  // auto &AC =
+  //     getAnalysis<AssumptionCacheTracker>().getAssumptionCache(*lsFunction);
 
-  /*
-   * Fetch the LLVM loop.
-   */
-  auto h = ls->getHeader();
-  auto llvmLoop = LLVMLoops.getLoopFor(h);
-  assert(llvmLoop != nullptr);
+  // /*
+  //  * Fetch the LLVM loop.
+  //  */
+  // auto h = ls->getHeader();
+  // auto llvmLoop = LLVMLoops.getLoopFor(h);
+  // assert(llvmLoop != nullptr);
 
-  /*
-   * Try to unroll the loop
-   */
-  UnrollLoopOptions opts;
-  opts.Count = unrollFactor;
-  opts.TripCount = loopTripCount;
-  opts.Force = false;
-  opts.AllowRuntime = false;
-  opts.AllowExpensiveTripCount = true;
-  opts.PreserveCondBr = false;
-  opts.TripMultiple = SE.getSmallConstantTripMultiple(llvmLoop);
-  opts.PeelCount = 0;
-  opts.UnrollRemainder = false;
-  opts.ForgetAllSCEV = true;
-  OptimizationRemarkEmitter ORE(lsFunction);
-  auto unrolled =
-      UnrollLoop(llvmLoop, opts, &LLVMLoops, &SE, &DT, &AC, &ORE, true);
+  // /*
+  //  * Try to unroll the loop
+  //  */
+  // UnrollLoopOptions opts;
+  // opts.Count = unrollFactor;
+  // opts.TripCount = loopTripCount;
+  // opts.Force = false;
+  // opts.AllowRuntime = false;
+  // opts.AllowExpensiveTripCount = true;
+  // opts.PreserveCondBr = false;
+  // opts.TripMultiple = SE.getSmallConstantTripMultiple(llvmLoop);
+  // opts.PeelCount = 0;
+  // opts.UnrollRemainder = false;
+  // opts.ForgetAllSCEV = true;
+  // OptimizationRemarkEmitter ORE(lsFunction);
+  // auto unrolled =
+  //     UnrollLoop(llvmLoop, opts, &LLVMLoops, &SE, &DT, &AC, &ORE, true);
 
-  return unrolled;
+  return LoopUnrollResult::Unmodified;
 }
 
 bool LoopTransformer::fullyUnrollLoop(LoopDependenceInfo *loop) {

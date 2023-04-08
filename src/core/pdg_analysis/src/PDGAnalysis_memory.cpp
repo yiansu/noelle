@@ -26,6 +26,11 @@
 #include "IntegrationWithSVF.hpp"
 #include "noelle/core/Utils.hpp"
 
+#define MustAlias AliasResult::MustAlias
+#define PartialAlias AliasResult::PartialAlias
+#define MayAlias AliasResult::MayAlias
+#define NoAlias AliasResult::NoAlias
+
 namespace llvm::noelle {
 
 void PDGAnalysis::iterateInstForStore(PDG *pdg,

@@ -11,7 +11,7 @@ if test $# -lt 1 ; then
 fi
 
 ###########     LLVM alias analyses
-AA="-disable-basicaa -globals-aa -cfl-steens-aa -tbaa -scev-aa -cfl-anders-aa --objc-arc-aa"
+AA="--disable-basic-aa -globals-aa -cfl-steens-aa -tbaa -scev-aa -cfl-anders-aa --objc-arc-aa"
 EXTRA_AA=""
 
 
@@ -36,7 +36,7 @@ fi
 
 
 ########### NOELLE analyses
-PDGPASS="-load ${installDir}/lib/AllocAA.so -load ${installDir}/lib/AliasAnalysisEngine.so -load ${installDir}/lib/TalkDown.so -load ${installDir}/lib/CallGraph.so -load ${installDir}/lib/DG.so -load ${installDir}/lib/PDG.so -load ${installDir}/lib/PDGAnalysis.so -load ${installDir}/lib/MemoryCloningAnalysis.so"
+PDGPASS=" -load ${installDir}/lib/AliasAnalysisEngine.so -load ${installDir}/lib/TalkDown.so -load ${installDir}/lib/CallGraph.so -load ${installDir}/lib/DG.so -load ${installDir}/lib/PDG.so -load ${installDir}/lib/PDGAnalysis.so -load ${installDir}/lib/MemoryCloningAnalysis.so"
 
 
 ########### All analyses

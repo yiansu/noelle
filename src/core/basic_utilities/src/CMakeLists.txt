@@ -1,8 +1,5 @@
 # Sources
 set(Srcs 
-  ScalarEvolutionReferencer.cpp
-  ScalarEvolutionReferenceTreeExpander.cpp
-  ScalarEvolutionDelinearization.cpp
   BitMatrix.cpp
   Utils.cpp
 )

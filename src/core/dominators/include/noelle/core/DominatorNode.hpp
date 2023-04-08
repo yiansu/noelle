@@ -37,7 +37,7 @@ public:
 
   BasicBlock *getBlock(void) const;
   DominatorNode *getParent(void);
-  std::vector<DominatorNode *> getChildren(void);
+  std::vector<DominatorNode *> children(void);
   unsigned getLevel(void) const;
   DominatorNode *getIDom(void);
 
@@ -50,7 +50,7 @@ private:
   uint32_t level;
 
   DominatorNode *parent;
-  std::vector<DominatorNode *> children;
+  std::vector<DominatorNode *> childs;
   DominatorNode *iDom;
 };
 

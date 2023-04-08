@@ -67,7 +67,7 @@ bool MetadataManager::doesHaveMetadata(LoopStructure *loop,
    */
   auto metaString = cast<MDString>(metaNode->getOperand(0))->getString();
   this->metadata[loop][metadataName] =
-      new MetadataEntry(metadataName, metaString);
+      new MetadataEntry(metadataName, metaString.str());
 
   return true;
 }
@@ -219,7 +219,7 @@ void MetadataManager::addMetadata(LoopStructure *loop,
    * Add the metadata.
    */
   auto loopEntries = this->metadata[loop];
-  loopEntries[metadataName] = new MetadataEntry(metadataName, metaString);
+  loopEntries[metadataName] = new MetadataEntry(metadataName, metaString.str());
 
   return;
 }

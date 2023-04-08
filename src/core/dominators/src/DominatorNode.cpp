@@ -27,7 +27,7 @@ DominatorNode::DominatorNode(const DTAliases::Node &node)
   : B{ node.getBlock() },
     level{ node.getLevel() },
     parent{ nullptr },
-    children{},
+    childs{},
     iDom{ nullptr } {
 
   return;
@@ -37,7 +37,7 @@ DominatorNode::DominatorNode(const DominatorNode &node)
   : B{ node.getBlock() },
     level{ node.getLevel() },
     parent{ nullptr },
-    children{},
+    childs{},
     iDom{ nullptr } {
 
   return;
@@ -60,7 +60,7 @@ raw_ostream &DominatorNode::print(raw_ostream &stream, std::string prefix) {
   else
     stream << "null";
   stream << "\n" << prefix << "Children: ";
-  for (auto child : getChildren()) {
+  for (auto child : children()) {
     child->getBlock()->printAsOperand(stream << "\t");
   }
   return stream << "\n";
@@ -74,8 +74,8 @@ DominatorNode *DominatorNode::getParent(void) {
   return parent;
 }
 
-std::vector<DominatorNode *> DominatorNode::getChildren(void) {
-  return children;
+std::vector<DominatorNode *> DominatorNode::children(void) {
+  return childs;
 }
 
 unsigned DominatorNode::getLevel(void) const {

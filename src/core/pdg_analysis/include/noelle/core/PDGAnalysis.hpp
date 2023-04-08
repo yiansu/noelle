@@ -23,7 +23,7 @@
 
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/TalkDown.hpp"
-#include "noelle/core/AllocAA.hpp"
+// #include "noelle/core/AllocAA.hpp"
 #include "noelle/core/PDGPrinter.hpp"
 #include "noelle/core/DataFlow.hpp"
 #include "noelle/core/PDG.hpp"
@@ -66,7 +66,7 @@ private:
   Module *M;
   PDG *programDependenceGraph;
   std::unordered_map<Function *, PDG *> functionToFDGMap;
-  AllocAA *allocAA;
+  // AllocAA *allocAA;
   TalkDown *talkdown;
   DataFlowAnalysis dfa;
   PDGVerbosity verbose;
@@ -74,7 +74,7 @@ private:
   bool dumpPDG;
   bool performThePDGComparison;
   bool disableSVF;
-  bool disableAllocAA;
+  bool disableAllocAA = true;
   bool disableRA;
   PDGPrinter printer;
   noelle::CallGraph *noelleCG;

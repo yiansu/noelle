@@ -48,6 +48,14 @@ Value *ReferenceTreeExpander::getRootOfTree() {
   return rootValue;
 }
 
+Value *ReferenceTreeExpander::visitPtrToIntExpr(const SCEVPtrToIntExpr *Expr) {
+  return nullptr;
+}
+
+Value *ReferenceTreeExpander::visitSequentialUMinExpr(const SCEVSequentialUMinExpr *Expr) {
+  return nullptr;
+}
+
 Value *ReferenceTreeExpander::visitConstant(const SCEVConstant *S) {
   return currentNode->getValue();
 }

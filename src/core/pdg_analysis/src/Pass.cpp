@@ -69,7 +69,7 @@ bool PDGAnalysis::doInitialization(Module &M) {
       (PDGCheck.getNumOccurrences() > 0) ? true : false;
   this->disableSVF = (PDGSVFDisable.getNumOccurrences() > 0) ? true : false;
   this->disableAllocAA =
-      (PDGAllocAADisable.getNumOccurrences() > 0) ? true : false;
+      (PDGAllocAADisable.getNumOccurrences() > 0) ? true : true;
   this->disableRA = (PDGRADisable.getNumOccurrences() > 0) ? true : false;
 
   return false;
@@ -81,7 +81,7 @@ void PDGAnalysis::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.addRequired<DominatorTreeWrapperPass>();
   AU.addRequired<PostDominatorTreeWrapperPass>();
   AU.addRequired<ScalarEvolutionWrapperPass>();
-  AU.addRequired<AllocAA>();
+  // AU.addRequired<AllocAA>();
   AU.addRequired<TalkDown>();
   AU.setPreservesAll();
 

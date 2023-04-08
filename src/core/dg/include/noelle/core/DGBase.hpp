@@ -23,6 +23,7 @@
 
 #include "llvm/IR/Instructions.h"
 #include "llvm/Support/raw_ostream.h"
+#include <map>
 #include <climits>
 #include <queue>
 #include <set>

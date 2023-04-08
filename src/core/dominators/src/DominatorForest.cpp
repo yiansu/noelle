@@ -74,7 +74,7 @@ template <typename TreeType>
 std::set<DTAliases::Node *> DominatorForest::collectNodesOfTree(TreeType &T) {
   std::set<DTAliases::Node *> nodes;
   std::vector<DTAliases::Node *> worklist;
-  auto &rootBlocks = T.getRoots();
+  auto const &rootBlocks = T.roots();
   for (BasicBlock *b : rootBlocks)
     worklist.push_back(T.getNode(b));
 
@@ -88,7 +88,7 @@ std::set<DTAliases::Node *> DominatorForest::collectNodesOfTree(TreeType &T) {
     auto node = worklist.back();
     worklist.pop_back();
     nodes.insert(node);
-    auto children = node->getChildren();
+    auto children = node->children();
     for (auto child : children)
       worklist.push_back(child);
   }
@@ -134,13 +134,13 @@ void DominatorForest::cloneNodes(std::set<NodeType *> &nodesToClone) {
       summary->iDom = nodeMap[iDom];
     }
 
-    auto children = node->getChildren();
+    auto children = node->children();
     for (auto child : children) {
       if (nodeMap.find(child) == nodeMap.end())
         continue;
       auto childSummary = nodeMap[child];
       childSummary->parent = summary;
-      summary->children.push_back(childSummary);
+      summary->childs.push_back(childSummary);
     }
   }
 }
@@ -241,7 +241,7 @@ bool DominatorForest::dominates(DominatorNode *node1,
 
     if (node == node2)
       return true;
-    for (auto child : node->children)
+    for (auto child : node->childs)
       worklist.push(child);
   }
   return false;

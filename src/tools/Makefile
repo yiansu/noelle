@@ -1,6 +1,7 @@
-PARALLELIZER=parallelizer heuristics parallelization_technique dswp doall helix parallelization_planner
-TOOLS=pdg_stats codesize loop_size removefunction repl time_saved autotuner_search_space autotuner_doall_filter
-ALL=$(TOOLS) enablers deadfunctioneliminator loop_invariant_code_motion scev_simplification inliner $(PARALLELIZER) loop_stats scripts
+# PARALLELIZER=parallelizer heuristics parallelization_technique dswp doall helix parallelization_planner
+# TOOLS=pdg_stats codesize loop_size removefunction repl time_saved autotuner_search_space autotuner_doall_filter
+# ALL=$(TOOLS) enablers deadfunctioneliminator loop_invariant_code_motion scev_simplification inliner $(PARALLELIZER) loop_stats scripts
+ALL=parallelization_technique doall scripts
 
 all: $(ALL)
 

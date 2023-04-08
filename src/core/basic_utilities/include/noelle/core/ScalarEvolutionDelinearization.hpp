@@ -149,6 +149,8 @@ public:
 
   // Except in the trivial case described above, we do not know how to divide
   // Expr by Denominator for the following functions with empty implementation.
+  void visitPtrToIntExpr(const SCEVPtrToIntExpr *Expr) {}
+  void visitSequentialUMinExpr(const SCEVSequentialUMinExpr *Expr) {}
   void visitUDivExpr(const SCEVUDivExpr *Numerator) {}
   void visitSMaxExpr(const SCEVSMaxExpr *Numerator) {}
   void visitUMaxExpr(const SCEVUMaxExpr *Numerator) {}
@@ -284,17 +286,18 @@ public:
       return cannotDivide(Numerator);
 
     // The Remainder is obtained by replacing Denominator by 0 in Numerator.
-    ValueToValueMap RewriteMap;
+    // ValueToValueMap RewriteMap;
+    ValueToSCEVMapTy RewriteMap;
     RewriteMap[cast<SCEVUnknown>(Denominator)->getValue()] =
-        cast<SCEVConstant>(Zero)->getValue();
-    Remainder = SCEVParameterRewriter::rewrite(Numerator, SE, RewriteMap, true);
+        cast<SCEV>(cast<SCEVConstant>(Zero)->getValue());
+    Remainder = SCEVParameterRewriter::rewrite(Numerator, SE, RewriteMap);
 
     if (Remainder->isZero()) {
       // The Quotient is obtained by replacing Denominator by 1 in Numerator.
       RewriteMap[cast<SCEVUnknown>(Denominator)->getValue()] =
-          cast<SCEVConstant>(One)->getValue();
+          cast<SCEV>(cast<SCEVConstant>(One)->getValue());
       Quotient =
-          SCEVParameterRewriter::rewrite(Numerator, SE, RewriteMap, true);
+          SCEVParameterRewriter::rewrite(Numerator, SE, RewriteMap);
       return;
     }
 

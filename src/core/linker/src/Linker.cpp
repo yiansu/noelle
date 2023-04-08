@@ -92,13 +92,14 @@ void Linker::linkTransformedLoopToOriginalFunction(
 
     auto int64 = this->tm->getIntegerType(64);
     auto exitEnvPtr = endBuilder.CreateInBoundsGEP(
+	int64,
         envArray,
         ArrayRef<Value *>({ cast<Value>(ConstantInt::get(int64, 0)),
                             endBuilder.CreateMul(
                                 envIndexForExitVariable,
                                 ConstantInt::get(int64, valuesInCacheLine)) }));
     auto exitEnvCast =
-        endBuilder.CreateIntCast(endBuilder.CreateLoad(exitEnvPtr),
+        endBuilder.CreateIntCast(endBuilder.CreateLoad(int64, exitEnvPtr),
                                  integerType,
                                  /*isSigned=*/false);
     auto exitSwitch = endBuilder.CreateSwitch(exitEnvCast, loopExitBlocks[0]);
@@ -177,6 +178,7 @@ void Linker::substituteOriginalLoopWithTransformedLoop(
 
     auto int64 = this->tm->getIntegerType(64);
     auto exitEnvPtr = endBuilder.CreateInBoundsGEP(
+	int64,
         envArray,
         ArrayRef<Value *>({ cast<Value>(ConstantInt::get(int64, 0)),
                             endBuilder.CreateMul(
@@ -184,7 +186,7 @@ void Linker::substituteOriginalLoopWithTransformedLoop(
                                 ConstantInt::get(int64, valuesInCacheLine)) }));
     auto integerType = this->tm->getIntegerType(32);
     auto exitEnvCast =
-        endBuilder.CreateIntCast(endBuilder.CreateLoad(exitEnvPtr),
+        endBuilder.CreateIntCast(endBuilder.CreateLoad(int64, exitEnvPtr),
                                  integerType,
                                  /*isSigned=*/false);
     auto exitSwitch = endBuilder.CreateSwitch(exitEnvCast, loopExitBlocks[0]);
